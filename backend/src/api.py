@@ -18,7 +18,7 @@ CORS(app)
 '''
 # db_drop_and_create_all()
 
-## ROUTES
+# ROUTES
 '''
 @TODO implement endpoint
     GET /drinks
@@ -27,6 +27,11 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks')
+def getDrinks():
+    drinks = Drink.query.all()
+    drinks_data = [drink.short() for drink in drinks]
+    return jsonify(drinks_data)
 
 
 '''
@@ -37,6 +42,11 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drinks} where drinks is the list of drinks
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks-detail')
+def getDrinkDetails():
+    drinks = Drink.query.all()
+    drinks_data = [drink.long() for drink in drinks]
+    return jsonify(drinks_data)
 
 
 '''
@@ -48,6 +58,15 @@ CORS(app)
     returns status code 200 and json {"success": True, "drinks": drink} where drink an array containing only the newly created drink
         or appropriate status code indicating reason for failure
 '''
+@app.route('/drinks', methods=['POST'])
+def addDrink():
+    if requires_auth(permission='post:drink'):
+        data = request.get_json()
+        drink = Drink(title=data['title'], recipe=json.dumps(data['recipe']))
+        drink.insert()
+        return jsonify({"success": True, "drinks": drink.long()})
+
+    return jsonify({"success": False})
 
 
 '''
@@ -75,17 +94,18 @@ CORS(app)
 '''
 
 
-## Error Handling
+# Error Handling
 '''
 Example error handling for unprocessable entity
 '''
 @app.errorhandler(422)
 def unprocessable(error):
     return jsonify({
-                    "success": False, 
-                    "error": 422,
-                    "message": "unprocessable"
-                    }), 422
+        "success": False,
+        "error": 422,
+        "message": "unprocessable"
+    }), 422
+
 
 '''
 @TODO implement error handlers using the @app.errorhandler(error) decorator
