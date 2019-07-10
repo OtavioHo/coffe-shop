@@ -18,12 +18,14 @@ CORS(app)
 '''
 db_drop_and_create_all()
 
+
 # ROUTES
 @app.route('/drinks')
 def getDrinks():
     drinks = Drink.query.all()
     drinks_data = [drink.short() for drink in drinks]
     return jsonify({"success": True, "drinks": drinks_data}), 200
+
 
 @app.route('/drinks-detail')
 @requires_auth('get:drinks-detail')
@@ -33,6 +35,7 @@ def getDrinkDetails(payload):
 
     return jsonify({"success": True, "drinks": drinks_data}), 200
 
+
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
 def addDrink(payload):
@@ -41,26 +44,28 @@ def addDrink(payload):
     drink.insert()
     return jsonify({"success": True, "drinks": drink.long()}), 200
 
+
 @app.route('/drinks/<id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def patchDrink(payload, id):
     drink = Drink.query.filter(Drink.id == id).one_or_none()
-    if not drink: 
+    if not drink:
         abort(404)
     data = request.get_json()
     if 'title' in data:
         drink.title = data['title']
-    if 'recipe' in data: 
+    if 'recipe' in data:
         drink.recipe = json.dumps(data['recipe'])
     drink.update()
 
     return jsonify({"success": True, "drinks": drink.long()}), 200
 
+
 @app.route('/drinks/<id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def deleteDrinks(payload, id):
     drink = Drink.query.filter(Drink.id == id).one_or_none()
-    if not drink: 
+    if not drink:
         abort(404)
     drink.delete()
     return jsonify({"success": True, "delete": id})
@@ -69,6 +74,8 @@ def deleteDrinks(payload, id):
 '''
 Example error handling for unprocessable entity
 '''
+
+
 @app.errorhandler(422)
 def unprocessable(error):
     return jsonify({
@@ -77,13 +84,15 @@ def unprocessable(error):
         "message": "unprocessable"
     }), 422
 
+
 @app.errorhandler(404)
-def unauthorized(error):
+def notFound(error):
     return jsonify({
         "success": False,
         "error": 404,
         "message": "Resource not found"
     }), 404
+
 
 @app.errorhandler(AuthError)
 def unauthorized(error):

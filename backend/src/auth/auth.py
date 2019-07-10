@@ -71,20 +71,20 @@ def check_permissions(permission, payload):
 
     return True
 
+
 def verify_decode_jwt(token):
     # GET THE PUBLIC KEY FROM AUTH0
     jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
     jwks = json.loads(jsonurl.read())
-    
+
     # GET THE DATA IN THE HEADER
-    try: 
+    try:
         unverified_header = jwt.get_unverified_header(token)
     except jwt.JWTError:
         raise AuthError({
                 'code': 'invalid_header',
                 'description': 'Authorization malformed.'
             }, 401)
-
 
     # CHOOSE OUR KEY
     rsa_key = {}
@@ -103,7 +103,7 @@ def verify_decode_jwt(token):
                 'n': key['n'],
                 'e': key['e']
             }
-    
+
     # Finally, verify!!!
     if rsa_key:
         try:
@@ -127,7 +127,8 @@ def verify_decode_jwt(token):
         except jwt.JWTClaimsError:
             raise AuthError({
                 'code': 'invalid_claims',
-                'description': 'Incorrect claims. Please, check the audience and issuer.'
+                'description': 'Incorrect claims. Please, \
+                check the audience and issuer.'
             }, 401)
         except Exception:
             raise AuthError({
