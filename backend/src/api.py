@@ -51,7 +51,7 @@ def patchDrink(payload, id):
     if 'title' in data:
         drink.title = data['title']
     if 'recipe' in data: 
-        drink.recipe = data['recipe']
+        drink.recipe = json.dumps(data['recipe'])
     drink.update()
 
     return jsonify({"success": True, "drinks": drink.long()}), 200
