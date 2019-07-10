@@ -30,7 +30,6 @@ def getDrinks():
 def getDrinkDetails(payload):
     drinks = Drink.query.all()
     drinks_data = [drink.long() for drink in drinks]
-    print(payload)
 
     return jsonify({"success": True, "drinks": drinks_data}), 200
 
