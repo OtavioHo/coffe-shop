@@ -101,45 +101,72 @@ def check_permissions(permission, payload):
 
 
 def verify_decode_jwt(token):
-    token_header = jwt.get_unverified_header(token)
+    # GET THE PUBLIC KEY FROM AUTH0
+    jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
+    jwks = json.loads(jsonurl.read())
+    
+    # GET THE DATA IN THE HEADER
+    try: 
+        unverified_header = jwt.get_unverified_header(token)
+    except jwt.JWTError:
+        raise AuthError({
+                'code': 'invalid_header',
+                'description': 'Authorization malformed.'
+            }, 401)
 
-    # Verify if header has kid
-    if 'kid' not in token_header:
-        raise Exception('Invalid Token')
 
-    url = "https://" + AUTH0_DOMAIN + "/.well-known/jwks.json"
+    # CHOOSE OUR KEY
+    rsa_key = {}
+    if 'kid' not in unverified_header:
+        raise AuthError({
+            'code': 'invalid_header',
+            'description': 'Authorization malformed.'
+        }, 401)
 
-    response = urlopen(url).read().decode('utf-8')
-    JWKS = json.loads(response)
-    # Find JWK with same kid
+    for key in jwks['keys']:
+        if key['kid'] == unverified_header['kid']:
+            rsa_key = {
+                'kty': key['kty'],
+                'kid': key['kid'],
+                'use': key['use'],
+                'n': key['n'],
+                'e': key['e']
+            }
+    
+    # Finally, verify!!!
+    if rsa_key:
+        try:
+            # USE THE KEY TO VALIDATE THE JWT
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=API_AUDIENCE,
+                issuer='https://' + AUTH0_DOMAIN + '/'
+            )
 
-    def check_kid(jwk):
-        if jwk['kid'] == token_header['kid']:
-            return jwk
+            return payload
 
-    valid_keys = list(map(check_kid, JWKS['keys']))
-    if len(valid_keys) == 0:
-        raise Exception('Invalid Token')
+        except jwt.ExpiredSignatureError:
+            raise AuthError({
+                'code': 'token_expired',
+                'description': 'Token expired.'
+            }, 401)
 
-    my_jwk = valid_keys[0]
-
-    # Building certification
-    cert_string = my_jwk['x5c'][0]
-    cert = '-----BEGIN CERTIFICATE-----\n' + \
-        re.sub("(.{64})", "\\1\n", cert_string, 0, re.DOTALL) + \
-        '-----END CERTIFICATE-----'
-    cert_obj = load_pem_x509_certificate(
-        cert.encode('ascii'), default_backend())
-    public_key = cert_obj.public_key()
-
-    # Decoding JWT
-    try:
-        decode = jwt.decode(token, public_key,
-                            algorithms=ALGORITHMS[0], audience=API_AUDIENCE)
-    except jwt.ExpiredSignatureError:
-        raise Exception('Signature has expired')
-
-    return decode
+        except jwt.JWTClaimsError:
+            raise AuthError({
+                'code': 'invalid_claims',
+                'description': 'Incorrect claims. Please, check the audience and issuer.'
+            }, 401)
+        except Exception:
+            raise AuthError({
+                'code': 'invalid_header',
+                'description': 'Unable to parse authentication token.'
+            }, 400)
+    raise AuthError({
+                'code': 'invalid_header',
+                'description': 'Unable to find the appropriate key.'
+            }, 400)
 
 
 '''
