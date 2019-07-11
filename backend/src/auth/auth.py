@@ -29,7 +29,7 @@ class AuthError(Exception):
 # Auth Header
 
 def get_token_auth_header():
-
+    '''Get the token part from header.'''
     auth = request.headers.get("Authorization", None)
     if not auth:
         raise AuthError({"code": "authorization_header_missing",
@@ -57,6 +57,12 @@ def get_token_auth_header():
 
 
 def check_permissions(permission, payload):
+    '''Checks if user has permissions.
+    
+        arguments:
+            - permission: [String] permission string.
+            - payload: [Object] payload decoded from token.
+    '''
     if 'permissions' not in payload:
         raise AuthError({
             'code': 'invalid_claims',
@@ -73,6 +79,7 @@ def check_permissions(permission, payload):
 
 
 def verify_decode_jwt(token):
+    '''Verify if it is a valid token and decode it.'''
     # GET THE PUBLIC KEY FROM AUTH0
     jsonurl = urlopen(f'https://{AUTH0_DOMAIN}/.well-known/jwks.json')
     jwks = json.loads(jsonurl.read())
@@ -142,6 +149,11 @@ def verify_decode_jwt(token):
 
 
 def requires_auth(permission=''):
+    '''requires_auth decoretor.
+    
+        The decorator should verify the validity of the token
+        and decode it to check its permissions.       
+    '''
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
