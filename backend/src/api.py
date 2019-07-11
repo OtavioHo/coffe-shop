@@ -18,8 +18,15 @@ CORS(app)
 '''
 db_drop_and_create_all()
 
-
 # ROUTES
+
+'''
+Get the drinks list
+---
+responses:
+    200:
+        description: Drinks list
+'''
 @app.route('/drinks')
 def getDrinks():
     drinks = Drink.query.all()
@@ -27,6 +34,15 @@ def getDrinks():
     return jsonify({"success": True, "drinks": drinks_data}), 200
 
 
+'''
+Drinks list with details
+---
+responses:
+    401:
+        description: No permission
+    200:
+        description: The datailed drinks list
+'''
 @app.route('/drinks-detail')
 @requires_auth('get:drinks-detail')
 def getDrinkDetails(payload):
@@ -36,6 +52,15 @@ def getDrinkDetails(payload):
     return jsonify({"success": True, "drinks": drinks_data}), 200
 
 
+'''
+Creates a new drink
+---
+responses:
+    401:
+        description: No permission
+    200:
+        description: Drink created
+'''
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
 def addDrink(payload):
@@ -45,6 +70,21 @@ def addDrink(payload):
     return jsonify({"success": True, "drinks": drink.long()}), 200
 
 
+'''
+Update one drink
+---
+parameters:
+    - name: id
+    in: path
+    type: number
+    required: true
+    description: drink ID
+responses:
+    404:
+        description: Drink not found!
+    200:
+        description: Drink updared!
+'''
 @app.route('/drinks/<id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
 def patchDrink(payload, id):
@@ -58,9 +98,24 @@ def patchDrink(payload, id):
         drink.recipe = json.dumps(data['recipe'])
     drink.update()
 
-    return jsonify({"success": True, "drinks": drink.long()}), 200
+    return jsonify({"success": True, "drinks": [drink.long()]}), 200
 
 
+'''
+Delete one drink
+---
+parameters:
+    - name: id
+    in: path
+    type: number
+    required: true
+    description: drink ID
+responses:
+    404:
+        description: Drink not found!
+    200:
+        description: Drink deleted!
+'''
 @app.route('/drinks/<id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
 def deleteDrinks(payload, id):
@@ -100,4 +155,4 @@ def unauthorized(error):
         "success": False,
         "error": error.status_code,
         "message": error.error["description"]
-    }), error.status_code
+    }), 401
